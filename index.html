@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111322">
+  <title>好運抽籤｜今天選誰？</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #111322;
+      --panel: rgba(29, 32, 53, .82);
+      --line: rgba(255, 255, 255, .1);
+      --muted: #a5a8bd;
+      --text: #f7f6ff;
+      --accent: #b7a2ff;
+      --pink: #ffb6cf;
+    }
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 40px 20px;
+      display: grid;
+      place-items: center;
+      color: var(--text);
+      background: radial-gradient(ellipse at 18% 12%, #292347 0, transparent 34%),
+                  radial-gradient(ellipse at 90% 85%, #263650 0, transparent 32%), var(--bg);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    button, textarea { font: inherit; }
+    .app { width: min(100%, 920px); }
+    .topline { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: .88rem; letter-spacing: .08em; }
+    .sparkle { color: #ffe49a; font-size: 1.2rem; }
+    h1 { margin: 14px 0 8px; font-size: clamp(2rem, 6vw, 3.5rem); line-height: 1.1; letter-spacing: -.05em; }
+    .subtitle { margin: 0; color: var(--muted); }
+    .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 30px; }
+    .card { border: 1px solid var(--line); border-radius: 22px; padding: 24px; background: var(--panel); box-shadow: 0 20px 60px rgba(0,0,0,.2); backdrop-filter: blur(14px); }
+    .card-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+    h2 { margin: 0; font-size: 1rem; }
+    .count { color: var(--muted); font-size: .85rem; }
+    textarea {
+      width: 100%; min-height: 224px; resize: vertical; padding: 16px;
+      border: 1px solid var(--line); border-radius: 14px; outline: none;
+      color: var(--text); background: rgba(10, 12, 24, .56); line-height: 1.8;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(183,162,255,.12); }
+    .hint { margin: 11px 0 0; color: var(--muted); font-size: .82rem; }
+    .result-card { display: flex; min-height: 323px; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+    .result-label { color: var(--muted); font-size: .85rem; letter-spacing: .14em; text-transform: uppercase; }
+    .result { width: 100%; min-height: 104px; display: grid; place-items: center; margin: 15px 0 23px; color: var(--accent); font-size: clamp(2rem, 6vw, 3.3rem); font-weight: 750; overflow-wrap: anywhere; }
+    .result.placeholder { color: rgba(183,162,255,.45); }
+    .draw-button {
+      width: 100%; min-height: 54px; border: 0; border-radius: 14px; cursor: pointer;
+      color: #20183a; background: linear-gradient(110deg, #d1c2ff, #ffbfd4);
+      font-weight: 750; box-shadow: 0 8px 24px rgba(183,162,255,.17); transition: transform .15s, filter .15s;
+    }
+    .draw-button:hover { filter: brightness(1.07); transform: translateY(-2px); }
+    .draw-button:active { transform: translateY(0); }
+    .draw-button:disabled { cursor: not-allowed; filter: grayscale(.7); opacity: .6; transform: none; }
+    .status { min-height: 1.3em; margin: 12px 0 0; color: var(--muted); font-size: .82rem; }
+    .history { margin-top: 18px; }
+    .history-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .clear-button { padding: 4px 0; border: 0; color: var(--muted); background: none; cursor: pointer; font-size: .8rem; }
+    .clear-button:hover { color: var(--pink); }
+    .history-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .history-item { padding: 7px 11px; border: 1px solid var(--line); border-radius: 999px; color: #ddd8f3; background: rgba(255,255,255,.04); font-size: .85rem; }
+    .empty-history { color: var(--muted); font-size: .85rem; }
+    .pop { animation: pop .42s cubic-bezier(.2,.8,.2,1); }
+    @keyframes pop { 0% { opacity: .35; transform: scale(.8) rotate(-3deg); } 70% { transform: scale(1.06) rotate(1deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
+    @media (max-width: 680px) { body { padding: 30px 16px; } .layout { grid-template-columns: 1fr; } .result-card { min-height: 285px; } .card { padding: 20px; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <div class="topline"><span class="sparkle" aria-hidden="true">✦</span> LITTLE LUCKY DRAW</div>
+    <h1>今天，選誰？</h1>
+    <p class="subtitle">把選項交給好運，答案就交給它吧。</p>
+
+    <div class="layout">
+      <section class="card" aria-labelledby="list-title">
+        <div class="card-heading">
+          <h2 id="list-title">抽籤名單</h2>
+          <span class="count" id="count">0 個選項</span>
+        </div>
+        <textarea id="options" aria-label="抽籤名單，每行一個選項" spellcheck="false">阿明
+小美
+小華
+小安
+今天請客的人</textarea>
+        <p class="hint">每行輸入一個選項；抽中的項目會自動從名單移除。</p>
+      </section>
+
+      <section class="card result-card" aria-labelledby="result-title">
+        <div class="result-label" id="result-title">LUCKY ONE</div>
+        <div class="result placeholder" id="result" aria-live="polite">準備好了嗎？</div>
+        <button class="draw-button" id="draw" type="button">✦　開始抽籤</button>
+        <p class="status" id="status" aria-live="polite">目前還沒有人中籤</p>
+      </section>
+    </div>
+
+    <section class="card history" aria-labelledby="history-title">
+      <div class="history-title">
+        <h2 id="history-title">抽籤紀錄</h2>
+        <button class="clear-button" id="clear-history" type="button">清除紀錄</button>
+      </div>
+      <div class="history-list" id="history-list"><span class="empty-history">抽出結果後會顯示在這裡</span></div>
+    </section>
+  </main>
+
+  <script>
+    const optionsInput = document.querySelector('#options');
+    const count = document.querySelector('#count');
+    const drawButton = document.querySelector('#draw');
+    const result = document.querySelector('#result');
+    const status = document.querySelector('#status');
+    const historyList = document.querySelector('#history-list');
+    const history = [];
+
+    function getOptions() {
+      return optionsInput.value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean);
+    }
+
+    function updateCount() {
+      const total = getOptions().length;
+      count.textContent = `${total} 個選項`;
+      drawButton.disabled = total === 0;
+    }
+
+    function randomIndex(max) {
+      if (window.crypto && window.crypto.getRandomValues) {
+        const value = new Uint32Array(1);
+        window.crypto.getRandomValues(value);
+        return Math.floor((value[0] / 0x100000000) * max);
+      }
+      return Math.floor(Math.random() * max);
+    }
+
+    function renderHistory() {
+      historyList.replaceChildren();
+      if (history.length === 0) {
+        const empty = document.createElement('span');
+        empty.className = 'empty-history';
+        empty.textContent = '抽出結果後會顯示在這裡';
+        historyList.append(empty);
+        return;
+      }
+      history.forEach((item, index) => {
+        const chip = document.createElement('span');
+        chip.className = 'history-item';
+        chip.textContent = `${history.length - index}. ${item}`;
+        historyList.append(chip);
+      });
+    }
+
+    optionsInput.addEventListener('input', updateCount);
+    drawButton.addEventListener('click', () => {
+      const options = getOptions();
+      if (options.length === 0) {
+        status.textContent = '請先在名單中輸入至少一個選項。';
+        return;
+      }
+      const winnerIndex = randomIndex(options.length);
+      const [winner] = options.splice(winnerIndex, 1);
+      optionsInput.value = options.join('\n');
+      result.textContent = winner;
+      result.classList.remove('placeholder', 'pop');
+      void result.offsetWidth;
+      result.classList.add('pop');
+      history.unshift(winner);
+      renderHistory();
+      status.textContent = options.length > 0 ? `恭喜中籤！名單還剩 ${options.length} 個選項。` : '恭喜中籤！名單已抽完，可以重新輸入新名單。';
+      updateCount();
+    });
+
+    document.querySelector('#clear-history').addEventListener('click', () => {
+      history.length = 0;
+      renderHistory();
+      status.textContent = '抽籤紀錄已清除。';
+    });
+
+    updateCount();
+  </script>
+</body>
+</html>
